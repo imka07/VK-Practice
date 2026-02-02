@@ -31,12 +31,12 @@ export default function CreateQuizPage() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl">
       <div className="mb-6">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/dashboard">
+        <Link href="/dashboard">
+          <Button variant="ghost" size="sm">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Назад к панели
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       <Card className="p-8">
