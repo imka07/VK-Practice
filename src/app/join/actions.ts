@@ -13,7 +13,8 @@ export async function joinQuizAction(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: 'Необходима авторизация' };
+    // Вместо redirect возвращаем ошибку
+    return { error: 'Необходима авторизация', needsAuth: true };
   }
 
   const roomCode = formatRoomCode(String(formData.get('room_code') || ''));

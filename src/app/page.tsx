@@ -1,93 +1,81 @@
+'use client';
+
 import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Users, Zap, Trophy, Code } from 'lucide-react';
+import { useAuth } from '@/lib/hooks/useAuth';
 
 export default function HomePage() {
+  const { user, profile } = useAuth();
+
   return (
-    <main className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white">
-        <div className="container mx-auto px-4 py-20">
-          <div className="max-w-3xl mx-auto text-center">
-            <h1 className="text-5xl font-bold mb-6 animate-fade-in">
-              Quiz Platform
-            </h1>
-            <p className="text-xl mb-8 text-primary-100 animate-slide-up">
-              Платформа для проведения интерактивных квизов в реальном времени
-            </p>
-            <div className="flex gap-4 justify-center animate-slide-up">
-              <Button size="lg" variant="secondary">
-                Создать квиз
-              </Button>
-              <Button size="lg" variant="outline" className="text-white border-white hover:bg-white/10">
-                Присоединиться
-              </Button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12">Возможности платформы</h2>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="w-6 h-6 text-primary-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Realtime</h3>
-              <p className="text-sm text-gray-600">
-                Все участники видят вопросы одновременно
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-success-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="w-6 h-6 text-success-600" />
-              </div>
-              <h3 className="font-semibold mb-2">До 10 участников</h3>
-              <p className="text-sm text-gray-600">
-                Поддержка небольших групп для мероприятий
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-warning-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trophy className="w-6 h-6 text-warning-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Лидерборд</h3>
-              <p className="text-sm text-gray-600">
-                Система подсчета баллов и определения победителей
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center hover:shadow-lg transition-shadow">
-              <div className="w-12 h-12 bg-error-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Code className="w-6 h-6 text-error-600" />
-              </div>
-              <h3 className="font-semibold mb-2">Код комнаты</h3>
-              <p className="text-sm text-gray-600">
-                Простое присоединение по 6-значному коду
-              </p>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="bg-gray-100 py-16">
-        <div className="container mx-auto px-4 text-center">
-          <h2 className="text-3xl font-bold mb-4">Готовы начать?</h2>
-          <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-            Создайте свой первый квиз или присоединитесь к существующему по коду комнаты
+      <div className="container mx-auto px-4 py-20">
+        <div className="text-center max-w-3xl mx-auto">
+          <div className="text-6xl mb-6">🎮</div>
+          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+            Добро пожаловать в Quiz Platform
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            Создавайте и проводите интерактивные квизы в режиме реального времени
           </p>
-          <div className="flex gap-4 justify-center">
-            <Button size="lg">Начать сейчас</Button>
-          </div>
+
+          {!user ? (
+            <div className="flex gap-4 justify-center">
+              <Link href="/register">
+                <Button size="lg">Зарегистрироваться</Button>
+              </Link>
+              <Link href="/login">
+                <Button variant="outline" size="lg">
+                  Войти
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            <div className="flex gap-4 justify-center">
+              {profile?.role === 'organizer' ? (
+                <Link href="/dashboard">
+                  <Button size="lg">Перейти к панели</Button>
+                </Link>
+              ) : (
+                <Link href="/join">
+                  <Button size="lg">Присоединиться к квизу</Button>
+                </Link>
+              )}
+            </div>
+          )}
         </div>
-      </section>
-    </main>
+      </div>
+
+      {/* Features */}
+      <div className="container mx-auto px-4 pb-20">
+        <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <Card className="p-6 text-center">
+            <div className="text-4xl mb-4">⚙️</div>
+            <h3 className="text-xl font-bold mb-2">Легкое создание</h3>
+            <p className="text-gray-600">
+              Создавайте квизы с разными типами вопросов за несколько минут
+            </p>
+          </Card>
+
+          <Card className="p-6 text-center">
+            <div className="text-4xl mb-4">💡</div>
+            <h3 className="text-xl font-bold mb-2">Реальное время</h3>
+            <p className="text-gray-600">
+              Все участники видят вопросы одновременно
+            </p>
+          </Card>
+
+          <Card className="p-6 text-center">
+            <div className="text-4xl mb-4">🏆</div>
+            <h3 className="text-xl font-bold mb-2">Лидерборд</h3>
+            <p className="text-gray-600">
+              Соревнуйтесь с другими участниками
+            </p>
+          </Card>
+        </div>
+      </div>
+    </div>
   );
 }

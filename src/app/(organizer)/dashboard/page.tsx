@@ -1,69 +1,69 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import { Alert } from '@/components/ui/Alert';
 import { Loading } from '@/components/ui/Spinner';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import { Plus, Play, Edit, Trash2, Users } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Play } from 'lucide-react';
 
 interface Quiz {
   id: string;
   title: string;
   description: string | null;
-  category: string | null;
+  category: string;
+  difficulty: string;
   room_code: string;
-  status: 'draft' | 'active' | 'paused' | 'completed';
+  status: string;
+  time_per_question: number;
+  points_per_question: number;
   created_at: string;
-  questions_count?: number;
 }
 
 export default function DashboardPage() {
-  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const { user, profile, loading: authLoading } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
+  console.log('Dashboard render: authLoading=', authLoading, 'loading=', loading);
+
   useEffect(() => {
-    console.log('Dashboard: authLoading=', authLoading, 'user=', user?.email);
-    
-    if (!authLoading && user) {
+    if (!authLoading && !user) {
+      console.log('No user, redirecting to login');
+      router.push('/login');
+      return;
+    }
+
+    if (!authLoading && profile?.role !== 'organizer') {
+      console.log('Not organizer, redirecting to home');
+      router.push('/');
+      return;
+    }
+
+    if (user && profile?.role === 'organizer') {
       console.log('Dashboard: загружаем квизы...');
       loadQuizzes();
     }
-  }, [user, authLoading]);
+  }, [user, profile, authLoading]);
 
   async function loadQuizzes() {
-    if (!user) return;
-
     try {
-      console.log('Loading quizzes for user:', user.id);
+      console.log('Loading quizzes for user:', user?.id);
       const { data, error } = await supabase
         .from('quizzes')
-        .select(`
-          *,
-          questions:questions(count)
-        `)
-        .eq('creator_id', user.id)
+        .select('*')
+        .eq('user_id', user!.id)
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading quizzes:', error);
-        throw error;
-      }
-
+      if (error) throw error;
       console.log('Loaded quizzes:', data);
-
-      const quizzesWithCount = data.map((quiz: any) => ({
-        ...quiz,
-        questions_count: quiz.questions[0]?.count || 0,
-      }));
-
-      setQuizzes(quizzesWithCount);
+      setQuizzes(data || []);
     } catch (error) {
       console.error('Error loading quizzes:', error);
     } finally {
@@ -71,14 +71,12 @@ export default function DashboardPage() {
     }
   }
 
-  async function deleteQuiz(id: string) {
-    if (!confirm('Вы уверены, что хотите удалить этот квиз?')) return;
+  async function handleDelete(id: string) {
+    if (!confirm('Удалить этот квиз?')) return;
 
     try {
       const { error } = await supabase.from('quizzes').delete().eq('id', id);
-
       if (error) throw error;
-
       setQuizzes(quizzes.filter((q) => q.id !== id));
     } catch (error) {
       console.error('Error deleting quiz:', error);
@@ -86,114 +84,118 @@ export default function DashboardPage() {
     }
   }
 
-  console.log('Dashboard render: authLoading=', authLoading, 'loading=', loading);
-
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loading text="Загрузка панели..." />
+        <Loading text="Загрузка..." />
       </div>
     );
   }
 
-  const statusColors: Record<string, 'primary' | 'success' | 'warning' | 'error'> = {
-    draft: 'secondary',
-    active: 'success',
-    paused: 'warning',
-    completed: 'primary',
-  };
-
-  const statusLabels: Record<string, string> = {
-    draft: 'Черновик',
-    active: 'Активный',
-    paused: 'На паузе',
-    completed: 'Завершен',
-  };
-
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Панель организатора
-          </h1>
-          <p className="text-gray-600">Управление квизами и мероприятиями</p>
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Панель организатора</h1>
+            <p className="text-gray-600 mt-2">Управление квизами и мероприятиями</p>
+          </div>
+          <Link href="/quiz/create">
+            <Button size="lg">
+              <PlusCircle className="w-5 h-5 mr-2" />
+              Создать квиз
+            </Button>
+          </Link>
         </div>
-        <Link href="/quiz/create">
-          <Button size="lg" onClick={() => console.log('Клик по кнопке "Создать квиз"')}>
-            <Plus className="w-5 h-5 mr-2" />
-            Создать квиз
-          </Button>
-        </Link>
-      </div>
 
-      {quizzes.length === 0 ? (
-        <Alert variant="info" title="У вас пока нет квизов">
-          Создайте свой первый квиз, чтобы начать проводить интерактивные мероприятия!
-        </Alert>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {quizzes.map((quiz) => (
-            <Card key={quiz.id} className="flex flex-col">
-              <Card.Header>
-                <div className="flex items-start justify-between mb-2">
-                  <Card.Title className="flex-1">{quiz.title}</Card.Title>
-                  <Badge variant={statusColors[quiz.status] as any}>
-                    {statusLabels[quiz.status]}
-                  </Badge>
-                </div>
-                {quiz.description && (
-                  <Card.Description className="line-clamp-2">
-                    {quiz.description}
-                  </Card.Description>
-                )}
-              </Card.Header>
-
-              <Card.Content>
-                <div className="space-y-2 text-sm text-gray-600">
-                  {quiz.category && (
-                    <div>Категория: <span className="font-medium">{quiz.category}</span></div>
-                  )}
-                  <div>Код комнаты: <span className="font-mono font-bold text-primary-600">{quiz.room_code}</span></div>
-                  <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-1" />
-                    Вопросов: {quiz.questions_count}
+        {quizzes.length === 0 ? (
+          <Card className="p-12 text-center">
+            <div className="text-6xl mb-4">🎮</div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              У вас пока нет квизов
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Создайте свой первый квиз чтобы начать
+            </p>
+            <Link href="/quiz/create">
+              <Button size="lg">
+                <PlusCircle className="w-5 h-5 mr-2" />
+                Создать первый квиз
+              </Button>
+            </Link>
+          </Card>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {quizzes.map((quiz) => (
+              <Card key={quiz.id} className="p-6 hover:shadow-lg transition-shadow">
+                <Card.Header className="p-0 mb-4 border-0">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <Card.Title className="text-xl mb-2">{quiz.title}</Card.Title>
+                      {quiz.description && (
+                        <Card.Description className="text-sm">
+                          {quiz.description}
+                        </Card.Description>
+                      )}
+                    </div>
+                    <Badge
+                      variant={
+                        quiz.status === 'active'
+                          ? 'success'
+                          : quiz.status === 'completed'
+                          ? 'secondary'
+                          : 'default'
+                      }
+                    >
+                      {quiz.status === 'draft' && 'Черновик'}
+                      {quiz.status === 'active' && 'Активный'}
+                      {quiz.status === 'completed' && 'Завершен'}
+                    </Badge>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Создан: {new Date(quiz.created_at).toLocaleDateString('ru-RU')}
-                  </div>
-                </div>
-              </Card.Content>
+                </Card.Header>
 
-              <Card.Footer className="mt-auto">
-                <div className="flex gap-2 w-full">
-                  <Link href={`/quiz/${quiz.id}/edit`} className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">
-                      <Edit className="w-4 h-4 mr-1" />
-                      Редактировать
+                <Card.Content className="p-0 space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between">
+                    <span>Категория:</span>
+                    <span className="font-medium">{quiz.category}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Код комнаты:</span>
+                    <span className="font-mono font-bold text-primary-600">
+                      {quiz.room_code}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Создан:</span>
+                    <span>{new Date(quiz.created_at).toLocaleDateString('ru-RU')}</span>
+                  </div>
+                </Card.Content>
+
+                <Card.Footer className="p-0 mt-4 pt-4 border-t flex gap-2">
+                  <Link href={`/quiz/${quiz.id}/host`} className="flex-1">
+                    <Button variant="primary" size="sm" className="w-full">
+                      <Play className="w-4 h-4 mr-2" />
+                      Запустить
                     </Button>
                   </Link>
-                  {quiz.status === 'draft' && quiz.questions_count > 0 && (
-                    <Link href={`/quiz/${quiz.id}/host`} className="flex-1">
-                      <Button size="sm" className="w-full">
-                        <Play className="w-4 h-4 mr-1" />
-                        Запустить
-                      </Button>
-                    </Link>
-                  )}
+                  <Link href={`/quiz/${quiz.id}/edit`}>
+                    <Button variant="outline" size="sm">
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                  </Link>
                   <Button
                     variant="danger"
                     size="sm"
-                    onClick={() => deleteQuiz(quiz.id)}
+                    onClick={() => handleDelete(quiz.id)}
                   >
                     <Trash2 className="w-4 h-4" />
                   </Button>
-                </div>
-              </Card.Footer>
-            </Card>
-          ))}
-        </div>
-      )}
+                </Card.Footer>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
