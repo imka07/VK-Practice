@@ -49,23 +49,41 @@ export function useAuth() {
   async function loadProfile(userId: string) {
     try {
       console.log('Loading profile for user:', userId);
-      const { data, error } = await supabase
+      
+      const { data, error, status, statusText } = await supabase
         .from('profiles')
         .select('id, username, role')
         .eq('id', userId)
         .single();
 
+      console.log('Profile query result:', { data, error, status, statusText });
+
       if (error) {
         console.error('Error loading profile:', error);
-        setProfile(null);
+        console.error('Error code:', error.code);
+        console.error('Error message:', error.message);
+        console.error('Error details:', error.details);
+        
+        // Если профиля нет - создадим базовый (fallback)
+        if (error.code === 'PGRST116') {
+          console.log('Profile not found, user needs to complete registration');
+          setProfile({
+            id: userId,
+            username: 'User',
+            role: 'participant'
+          });
+        } else {
+          setProfile(null);
+        }
       } else {
-        console.log('Profile loaded:', data);
+        console.log('Profile loaded successfully:', data);
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error in loadProfile:', error);
+      console.error('Exception in loadProfile:', error);
       setProfile(null);
     } finally {
+      console.log('Setting loading to false');
       setLoading(false);
     }
   }
