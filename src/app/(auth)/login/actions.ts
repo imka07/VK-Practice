@@ -38,3 +38,16 @@ export async function loginAction(formData: FormData) {
     redirect('/');
   }
 }
+
+export async function logoutAction() {
+  const supabase = await createClient();
+  
+  const { error } = await supabase.auth.signOut();
+  
+  if (error) {
+    console.error('Logout error:', error);
+    return { error: 'Ошибка при выходе' };
+  }
+  
+  redirect('/login');
+}
