@@ -1,4 +1,4 @@
-import { TextareaHTMLAttributes, forwardRef } from 'react';
+import { TextareaHTMLAttributes, forwardRef, useId } from 'react';
 import { cn } from '@/lib/utils/cn';
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -9,20 +9,22 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, helperText, id, ...props }, ref) => {
-    const textareaId = id || `textarea-${Math.random().toString(36).substr(2, 9)}`;
+    const generatedId = useId();
+    const textareaId = id || generatedId;
 
     return (
       <div className="w-full">
         {label && (
           <label htmlFor={textareaId} className="block text-sm font-medium text-gray-700 mb-1">
             {label}
+            {props.required && <span className="text-error-500 ml-1">*</span>}
           </label>
         )}
         <textarea
           ref={ref}
           id={textareaId}
           className={cn(
-            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors resize-none',
+            'w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-colors resize-vertical',
             error ? 'border-error-500 focus:ring-error-500' : 'border-gray-300',
             props.disabled && 'bg-gray-100 cursor-not-allowed',
             className
