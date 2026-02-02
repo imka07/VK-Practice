@@ -44,7 +44,7 @@ export default function DashboardPage() {
       }
       loadQuizzes();
     }
-  }, [user, profile, authLoading, profileLoading, router, supabase]);
+  }, [user, profile, authLoading, profileLoading]);
 
   async function loadQuizzes() {
     if (!user) return;
@@ -120,12 +120,12 @@ export default function DashboardPage() {
           </h1>
           <p className="text-gray-600">Управление квизами и мероприятиями</p>
         </div>
-        <Button size="lg" asChild>
-          <Link href="/quiz/create">
+        <Link href="/quiz/create">
+          <Button size="lg">
             <Plus className="w-5 h-5 mr-2" />
             Создать квиз
-          </Link>
-        </Button>
+          </Button>
+        </Link>
       </div>
 
       {quizzes.length === 0 ? (
@@ -168,28 +168,19 @@ export default function DashboardPage() {
 
               <Card.Footer className="mt-auto">
                 <div className="flex gap-2 w-full">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1"
-                    asChild
-                  >
-                    <Link href={`/quiz/${quiz.id}/edit`}>
+                  <Link href={`/quiz/${quiz.id}/edit`} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full">
                       <Edit className="w-4 h-4 mr-1" />
                       Редактировать
-                    </Link>
-                  </Button>
+                    </Button>
+                  </Link>
                   {quiz.status === 'draft' && quiz.questions_count > 0 && (
-                    <Button
-                      size="sm"
-                      className="flex-1"
-                      asChild
-                    >
-                      <Link href={`/quiz/${quiz.id}/host`}>
+                    <Link href={`/quiz/${quiz.id}/host`} className="flex-1">
+                      <Button size="sm" className="w-full">
                         <Play className="w-4 h-4 mr-1" />
                         Запустить
-                      </Link>
-                    </Button>
+                      </Button>
+                    </Link>
                   )}
                   <Button
                     variant="danger"

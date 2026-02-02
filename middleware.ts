@@ -34,30 +34,26 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const pathname = request.nextUrl.pathname;
+
   // Защищенные маршруты (требуют авторизации)
-  const protectedRoutes = ['/dashboard', '/organizer'];
+  const protectedRoutes = ['/dashboard', '/quiz'];
   const isProtectedRoute = protectedRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
+    pathname.startsWith(route)
   );
 
   // Маршруты только для неавторизованных
   const authRoutes = ['/login', '/register'];
-  const isAuthRoute = authRoutes.some((route) =>
-    request.nextUrl.pathname.startsWith(route)
-  );
+  const isAuthRoute = authRoutes.includes(pathname);
 
   // Редирект на логин если не авторизован и пытается попасть на защищенный маршрут
   if (isProtectedRoute && !user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/login';
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Редирект на dashboard если уже авторизован и пытается попасть на login/register
   if (isAuthRoute && user) {
-    const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = '/dashboard';
-    return NextResponse.redirect(redirectUrl);
+    return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
   return supabaseResponse;
