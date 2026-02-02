@@ -1,14 +1,13 @@
-import React, { useId } from 'react';
+import { InputHTMLAttributes, forwardRef } from 'react';
 import { cn } from '@/lib/utils/cn';
 
-interface RadioProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface RadioProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label?: string;
 }
 
-export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
+export const Radio = forwardRef<HTMLInputElement, RadioProps>(
   ({ className, label, id, ...props }, ref) => {
-    const generatedId = useId();
-    const radioId = id || generatedId;
+    const radioId = id || `radio-${Math.random().toString(36).substr(2, 9)}`;
 
     return (
       <div className="flex items-center">
@@ -17,7 +16,8 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
           id={radioId}
           type="radio"
           className={cn(
-            'h-4 w-4 text-primary-600 border-gray-300 focus:ring-2 focus:ring-primary-500',
+            'w-4 h-4 text-primary-600 bg-white border-gray-300',
+            'focus:ring-2 focus:ring-primary-500 focus:ring-offset-0',
             'disabled:opacity-50 disabled:cursor-not-allowed',
             className
           )}
@@ -26,10 +26,7 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
         {label && (
           <label
             htmlFor={radioId}
-            className={cn(
-              'ml-2 text-sm font-medium text-gray-700',
-              props.disabled && 'opacity-50 cursor-not-allowed'
-            )}
+            className="ml-2 text-sm font-medium text-gray-900 cursor-pointer"
           >
             {label}
           </label>
@@ -40,22 +37,3 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
 );
 
 Radio.displayName = 'Radio';
-
-interface RadioGroupProps {
-  children: React.ReactNode;
-  label?: string;
-  className?: string;
-}
-
-export function RadioGroup({ children, label, className }: RadioGroupProps) {
-  return (
-    <div className={cn('space-y-2', className)}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-        </label>
-      )}
-      <div className="space-y-2">{children}</div>
-    </div>
-  );
-}
