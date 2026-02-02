@@ -71,14 +71,17 @@ export default function DashboardPage() {
 
   async function loadQuizzes() {
     try {
-      console.log('Loading quizzes for user:', user?.id);
+      console.log('Loading quizzes...');
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
-        .eq('user_id', user!.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading quizzes:', error);
+        throw error;
+      }
+      
       console.log('Loaded quizzes:', data);
       setQuizzes(data || []);
     } catch (error) {
