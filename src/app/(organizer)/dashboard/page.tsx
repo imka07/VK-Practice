@@ -29,7 +29,10 @@ export default function DashboardPage() {
   const supabase = createClient();
 
   useEffect(() => {
+    console.log('Dashboard: authLoading=', authLoading, 'user=', user?.email);
+    
     if (!authLoading && user) {
+      console.log('Dashboard: загружаем квизы...');
       loadQuizzes();
     }
   }, [user, authLoading]);
@@ -38,6 +41,7 @@ export default function DashboardPage() {
     if (!user) return;
 
     try {
+      console.log('Loading quizzes for user:', user.id);
       const { data, error } = await supabase
         .from('quizzes')
         .select(`
@@ -47,7 +51,12 @@ export default function DashboardPage() {
         .eq('creator_id', user.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading quizzes:', error);
+        throw error;
+      }
+
+      console.log('Loaded quizzes:', data);
 
       const quizzesWithCount = data.map((quiz: any) => ({
         ...quiz,
@@ -76,6 +85,8 @@ export default function DashboardPage() {
       alert('Ошибка при удалении квиза');
     }
   }
+
+  console.log('Dashboard render: authLoading=', authLoading, 'loading=', loading);
 
   if (authLoading || loading) {
     return (
@@ -109,7 +120,7 @@ export default function DashboardPage() {
           <p className="text-gray-600">Управление квизами и мероприятиями</p>
         </div>
         <Link href="/quiz/create">
-          <Button size="lg">
+          <Button size="lg" onClick={() => console.log('Клик по кнопке "Создать квиз"')}>
             <Plus className="w-5 h-5 mr-2" />
             Создать квиз
           </Button>
