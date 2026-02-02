@@ -1,38 +1,35 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/lib/utils/cn';
 
-interface RadioProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
+interface RadioProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
 }
 
 export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
-  ({ className, label, ...props }, ref) => {
+  ({ className, label, id, ...props }, ref) => {
+    const generatedId = useId();
+    const radioId = id || generatedId;
+
     return (
       <div className="flex items-center">
         <input
           ref={ref}
+          id={radioId}
           type="radio"
           className={cn(
-            'h-4 w-4 cursor-pointer',
-            'border-gray-300 text-primary-600',
-            'focus:ring-2 focus:ring-primary-500 focus:ring-offset-2',
-            'disabled:cursor-not-allowed disabled:bg-gray-100',
+            'h-4 w-4 text-primary-600 border-gray-300 focus:ring-2 focus:ring-primary-500',
+            'disabled:opacity-50 disabled:cursor-not-allowed',
             className
           )}
           {...props}
         />
         {label && (
           <label
+            htmlFor={radioId}
             className={cn(
-              'ml-2 text-sm text-gray-700 cursor-pointer select-none',
-              props.disabled && 'text-gray-400 cursor-not-allowed'
+              'ml-2 text-sm font-medium text-gray-700',
+              props.disabled && 'opacity-50 cursor-not-allowed'
             )}
-            onClick={(e) => {
-              if (!props.disabled) {
-                const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                input?.click();
-              }
-            }}
           >
             {label}
           </label>
@@ -45,29 +42,20 @@ export const Radio = React.forwardRef<HTMLInputElement, RadioProps>(
 Radio.displayName = 'Radio';
 
 interface RadioGroupProps {
-  label?: string;
-  error?: string;
   children: React.ReactNode;
+  label?: string;
   className?: string;
 }
 
-export const RadioGroup: React.FC<RadioGroupProps> = ({
-  label,
-  error,
-  children,
-  className,
-}) => {
+export function RadioGroup({ children, label, className }: RadioGroupProps) {
   return (
     <div className={cn('space-y-2', className)}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700">
+        <label className="block text-sm font-medium text-gray-700 mb-2">
           {label}
         </label>
       )}
       <div className="space-y-2">{children}</div>
-      {error && (
-        <p className="text-sm text-error-600">{error}</p>
-      )}
     </div>
   );
-};
+}
