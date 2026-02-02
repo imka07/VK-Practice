@@ -26,19 +26,52 @@ export function useProfile() {
         return;
       }
 
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle(); // Используем maybeSingle вместо single
+
+        if (error) {
+          console.error('Error loading profile:', error);
+          setProfile(null);
+        } else if (data) {
+          setProfile(data);
+        } else {
+          // Профиль не найден - можно создать автоматически
+          console.log('Profile not found, creating...');
+          await createProfileIfNotExists();
+        }
+      } catch (err) {
+        console.error('Unexpected error loading profile:', err);
+        setProfile(null);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    async function createProfileIfNotExists() {
+      if (!user) return;
+
+      const username = user.user_metadata?.username || user.email?.split('@')[0] || 'user';
+      const role = user.user_metadata?.role || 'participant';
+
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
-        .eq('id', user.id)
+        .insert({
+          id: user.id,
+          username,
+          role,
+        })
+        .select()
         .single();
 
       if (error) {
-        console.error('Error loading profile:', error);
+        console.error('Error creating profile:', error);
       } else {
         setProfile(data);
       }
-
-      setLoading(false);
     }
 
     loadProfile();

@@ -24,8 +24,19 @@ export async function registerAction(formData: FormData) {
     return { error: 'Имя пользователя должно быть не менее 3 символов' };
   }
 
+  // Проверяем, не занято ли имя пользователя
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('username')
+    .eq('username', username)
+    .maybeSingle();
+
+  if (existingProfile) {
+    return { error: 'Это имя пользователя уже занято' };
+  }
+
   // Регистрация через Supabase Auth
-  const { data, error } = await supabase.auth.signUp({
+  const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -36,12 +47,12 @@ export async function registerAction(formData: FormData) {
     },
   });
 
-  if (error) {
-    return { error: error.message };
+  if (authError) {
+    return { error: authError.message };
   }
 
   // Если требуется подтверждение email, показываем сообщение
-  if (data.user && !data.session) {
+  if (authData.user && !authData.session) {
     return {
       success: true,
       message: 'Проверьте вашу почту для подтверждения аккаунта',
@@ -49,18 +60,21 @@ export async function registerAction(formData: FormData) {
   }
 
   // Создаем профиль пользователя
-  if (data.user) {
+  if (authData.user) {
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
-        id: data.user.id,
+        id: authData.user.id,
         username,
         role: role as 'participant' | 'organizer',
       });
 
     if (profileError) {
-      console.error('Profile creation error:', profileError);
-      // Не блокируем регистрацию, профиль можно создать позже
+      // Если профиль не создался из-за дублирования, игнорируем
+      if (profileError.code !== '23505') {
+        console.error('Profile creation error:', profileError);
+        return { error: 'Ошибка создания профиля. Попробуйте войти.' };
+      }
     }
   }
 
