@@ -36,11 +36,14 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Защищенные маршруты (требуют авторизации)
-  const isProtectedRoute = 
-    pathname === '/dashboard' || 
-    pathname.startsWith('/quiz/') ||
-    pathname.startsWith('/organizer/');
+  // Маршруты только для организаторов
+  const organizerRoutes = ['/dashboard', '/quiz/create'];
+  const isOrganizerRoute = organizerRoutes.some(route => pathname.startsWith(route));
+
+  // Маршруты требующие авторизации (любая роль)
+  const isQuizEditRoute = pathname.startsWith('/quiz/') && pathname.includes('/edit');
+  const isQuizHostRoute = pathname.startsWith('/quiz/') && pathname.includes('/host');
+  const isProtectedRoute = isOrganizerRoute || isQuizEditRoute || isQuizHostRoute;
 
   // Маршруты только для неавторизованных
   const isAuthRoute = pathname === '/login' || pathname === '/register';
@@ -50,9 +53,34 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Редирект на dashboard если уже авторизован и пытается попасть на login/register
+  // Редирект в зависимости от роли если уже авторизован и пытается попасть на login/register
   if (isAuthRoute && session) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Получаем роль пользователя
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (profile?.role === 'organizer') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    } else {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
+  }
+
+  // Проверяем роль для маршрутов организатора
+  if (isOrganizerRoute && session) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    // Если не организатор - редирект на главную
+    if (profile?.role !== 'organizer') {
+      return NextResponse.redirect(new URL('/', request.url));
+    }
   }
 
   return supabaseResponse;

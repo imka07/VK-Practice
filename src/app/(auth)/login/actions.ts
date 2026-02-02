@@ -9,24 +9,32 @@ export async function loginAction(formData: FormData) {
   const email = String(formData.get('email') || '').trim();
   const password = String(formData.get('password') || '');
 
+  // Валидация
   if (!email || !password) {
     return { error: 'Заполните все поля' };
   }
 
-  const { error } = await supabase.auth.signInWithPassword({
+  // Вход через Supabase Auth
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   });
 
   if (error) {
-    return { error: error.message };
+    return { error: 'Неверный email или пароль' };
   }
 
-  redirect('/dashboard');
-}
+  // Получаем профиль пользователя
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', data.user.id)
+    .single();
 
-export async function logoutAction() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  redirect('/login');
+  // Редиректим в зависимости от роли
+  if (profile?.role === 'organizer') {
+    redirect('/dashboard');
+  } else {
+    redirect('/');
+  }
 }

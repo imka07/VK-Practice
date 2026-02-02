@@ -78,5 +78,10 @@ export async function registerAction(formData: FormData) {
     }
   }
 
-  redirect('/dashboard');
+  // Редиректим в зависимости от роли
+  if (role === 'organizer') {
+    redirect('/dashboard');
+  } else {
+    redirect('/');
+  }
 }
