@@ -1,20 +1,32 @@
 /**
- * Генерирует уникальный 6-значный код комнаты
- * Исключает символы, которые можно спутать: O, 0, I, 1
+ * Генерирует уникальный код комнаты для квиза
+ * Формат: 6 символов (буквы верхнего регистра и цифры)
+ * Пример: "ABC123", "XYZ789"
  */
 export function generateRoomCode(): string {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
   let code = '';
+  
   for (let i = 0; i < 6; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
+    const randomIndex = Math.floor(Math.random() * chars.length);
+    code += chars[randomIndex];
   }
+  
   return code;
 }
 
 /**
- * Проверяет валидность кода комнаты
+ * Проверяет валидность room code
  */
 export function isValidRoomCode(code: string): boolean {
-  const pattern = /^[A-HJ-NP-Z2-9]{6}$/;
+  const pattern = /^[A-Z0-9]{6}$/;
   return pattern.test(code);
+}
+
+/**
+ * Форматирует room code в единый формат
+ * Преобразует к верхнему регистру и удаляет пробелы
+ */
+export function formatRoomCode(code: string): string {
+  return code.trim().toUpperCase().replace(/\s+/g, '');
 }
