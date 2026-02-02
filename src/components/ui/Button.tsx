@@ -1,14 +1,16 @@
 import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { cn } from '@/lib/utils/cn';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
   size?: 'sm' | 'md' | 'lg';
-  isLoading?: boolean;
+  loading?: boolean;
+  asChild?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'primary', size = 'md', isLoading, disabled, children, ...props }, ref) => {
+  ({ className, variant = 'primary', size = 'md', loading, disabled, asChild = false, children, ...props }, ref) => {
     const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
     
     const variants = {
@@ -25,14 +27,16 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       lg: 'px-6 py-3 text-lg',
     };
 
+    const Comp = asChild ? Slot : 'button';
+
     return (
-      <button
+      <Comp
         ref={ref}
         className={cn(baseStyles, variants[variant], sizes[size], className)}
-        disabled={disabled || isLoading}
+        disabled={disabled || loading}
         {...props}
       >
-        {isLoading ? (
+        {loading ? (
           <>
             <svg className="animate-spin -ml-1 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -41,7 +45,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             Загрузка...
           </>
         ) : children}
-      </button>
+      </Comp>
     );
   }
 );
