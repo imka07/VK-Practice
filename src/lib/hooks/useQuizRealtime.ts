@@ -30,14 +30,11 @@ export function useQuizRealtime(quizId: string) {
   useEffect(() => {
     if (!quizId) return;
 
-    // Загружаем начальное состояние
     loadQuizState();
     loadParticipants();
 
-    // Подписываемся на Realtime канал
     const quizChannel = supabase.channel(`quiz:${quizId}`);
 
-    // Слушаем изменения состояния квиза
     quizChannel
       .on('postgres_changes', 
         { event: '*', schema: 'public', table: 'quiz_state', filter: `quiz_id=eq.${quizId}` },
@@ -48,7 +45,6 @@ export function useQuizRealtime(quizId: string) {
           }
         }
       )
-      // Слушаем изменения участников
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'quiz_participants', filter: `quiz_id=eq.${quizId}` },
         (payload) => {
@@ -86,7 +82,6 @@ export function useQuizRealtime(quizId: string) {
 
   async function loadParticipants() {
     try {
-      // Получаем участников
       const { data: participantsData, error: participantsError } = await supabase
         .from('quiz_participants')
         .select('id, user_id, score, joined_at')
@@ -100,7 +95,6 @@ export function useQuizRealtime(quizId: string) {
         return;
       }
 
-      // Получаем профили для всех участников
       const userIds = participantsData.map(p => p.user_id);
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
@@ -109,7 +103,6 @@ export function useQuizRealtime(quizId: string) {
 
       if (profilesError) throw profilesError;
 
-      // Объединяем данные
       const participantsWithUsernames = participantsData.map((p) => {
         const profile = profilesData?.find(prof => prof.id === p.user_id);
         return {
@@ -142,6 +135,12 @@ export function useQuizRealtime(quizId: string) {
 
       if (quizUpdateError) {
         console.error('Error updating quiz status:', quizUpdateError);
+        console.error('Error details:', {
+          code: quizUpdateError.code,
+          message: quizUpdateError.message,
+          details: quizUpdateError.details,
+          hint: quizUpdateError.hint,
+        });
         throw quizUpdateError;
       }
 
@@ -161,17 +160,28 @@ export function useQuizRealtime(quizId: string) {
         .select();
 
       if (stateError) {
-        console.error('Error upserting quiz state:', stateError);
+        console.error('Error upserting quiz state - Full error object:');
+        console.error('code:', stateError.code);
+        console.error('message:', stateError.message);
+        console.error('details:', stateError.details);
+        console.error('hint:', stateError.hint);
+        console.error('Full error:', stateError);
+        console.error('Stringified:', JSON.stringify(stateError, null, 2));
         throw stateError;
       }
 
       console.log('Quiz started successfully:', stateResult);
       
-      // Перезагружаем состояние
       await loadQuizState();
-    } catch (error) {
-      console.error('Error starting quiz:', error);
-      alert(`Ошибка при запуске квиза: ${JSON.stringify(error)}`);
+    } catch (error: any) {
+      console.error('Error starting quiz:');
+      console.error('Type:', typeof error);
+      console.error('Error object:', error);
+      console.error('Error keys:', Object.keys(error));
+      console.error('Error values:', Object.values(error));
+      
+      const errorMsg = error?.message || error?.code || 'Неизвестная ошибка';
+      alert(`Ошибка при запуске квиза: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
