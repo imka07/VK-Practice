@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value)
           );
           supabaseResponse = NextResponse.next({
@@ -31,28 +31,27 @@ export async function middleware(request: NextRequest) {
 
   // Обновляем сессию
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
 
   const pathname = request.nextUrl.pathname;
 
   // Защищенные маршруты (требуют авторизации)
-  const protectedRoutes = ['/dashboard', '/quiz'];
-  const isProtectedRoute = protectedRoutes.some((route) =>
-    pathname.startsWith(route)
-  );
+  const isProtectedRoute = 
+    pathname === '/dashboard' || 
+    pathname.startsWith('/quiz/') ||
+    pathname.startsWith('/organizer/');
 
   // Маршруты только для неавторизованных
-  const authRoutes = ['/login', '/register'];
-  const isAuthRoute = authRoutes.includes(pathname);
+  const isAuthRoute = pathname === '/login' || pathname === '/register';
 
   // Редирект на логин если не авторизован и пытается попасть на защищенный маршрут
-  if (isProtectedRoute && !user) {
+  if (isProtectedRoute && !session) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Редирект на dashboard если уже авторизован и пытается попасть на login/register
-  if (isAuthRoute && user) {
+  if (isAuthRoute && session) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -61,13 +60,6 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public folder
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

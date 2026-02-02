@@ -2,14 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Alert } from '@/components/ui/Alert';
 import { Loading } from '@/components/ui/Spinner';
 import { useAuth } from '@/lib/hooks/useAuth';
-import { useProfile } from '@/lib/hooks/useProfile';
 import { createClient } from '@/lib/supabase/client';
 import { Plus, Play, Edit, Trash2, Users } from 'lucide-react';
 
@@ -26,25 +24,15 @@ interface Quiz {
 
 export default function DashboardPage() {
   const { user, loading: authLoading } = useAuth();
-  const { profile, loading: profileLoading } = useProfile();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
-  const router = useRouter();
   const supabase = createClient();
 
   useEffect(() => {
-    if (!authLoading && !profileLoading) {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
-      if (profile?.role !== 'organizer') {
-        router.push('/');
-        return;
-      }
+    if (!authLoading && user) {
       loadQuizzes();
     }
-  }, [user, profile, authLoading, profileLoading]);
+  }, [user, authLoading]);
 
   async function loadQuizzes() {
     if (!user) return;
@@ -89,7 +77,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (authLoading || profileLoading || loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading text="Загрузка панели..." />
