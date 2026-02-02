@@ -4,9 +4,47 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { createClient } from '@/lib/supabase/client';
+import { useEffect, useState } from 'react';
+
+interface Profile {
+  role: 'organizer' | 'participant';
+}
 
 export default function HomePage() {
-  const { user, profile } = useAuth();
+  const { user, loading } = useAuth();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
+  const supabase = createClient();
+
+  useEffect(() => {
+    if (!user) return;
+
+    setLoadingProfile(true);
+    supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+      .then(({ data }) => {
+        setProfile(data);
+      })
+      .catch((error) => {
+        console.error('Error loading profile:', error);
+        setProfile(null);
+      })
+      .finally(() => {
+        setLoadingProfile(false);
+      });
+  }, [user]);
+
+  if (loading || loadingProfile) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100">

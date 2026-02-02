@@ -26,31 +26,48 @@ interface Quiz {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isOrganizer, setIsOrganizer] = useState<boolean | null>(null);
   const supabase = createClient();
 
-  console.log('Dashboard render: authLoading=', authLoading, 'loading=', loading);
-
   useEffect(() => {
-    if (!authLoading && !user) {
+    if (authLoading) return;
+
+    if (!user) {
       console.log('No user, redirecting to login');
       router.push('/login');
       return;
     }
 
-    if (!authLoading && profile?.role !== 'organizer') {
-      console.log('Not organizer, redirecting to home');
-      router.push('/');
-      return;
-    }
+    // Проверяем role
+    checkUserRole();
+  }, [user, authLoading]);
 
-    if (user && profile?.role === 'organizer') {
-      console.log('Dashboard: загружаем квизы...');
+  async function checkUserRole() {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user!.id)
+        .single();
+
+      if (error || data?.role !== 'organizer') {
+        console.log('Not organizer, redirecting to home');
+        setIsOrganizer(false);
+        router.push('/');
+        return;
+      }
+
+      setIsOrganizer(true);
       loadQuizzes();
+    } catch (error) {
+      console.error('Error checking user role:', error);
+      setIsOrganizer(false);
+      router.push('/');
     }
-  }, [user, profile, authLoading]);
+  }
 
   async function loadQuizzes() {
     try {
@@ -84,7 +101,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (authLoading || loading) {
+  if (authLoading || loading || isOrganizer === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Loading text="Загрузка..." />
