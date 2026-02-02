@@ -37,3 +37,17 @@ export const Radio = forwardRef<HTMLInputElement, RadioProps>(
 );
 
 Radio.displayName = 'Radio';
+
+// RadioGroup компонент для группировки radio кнопок
+interface RadioGroupProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function RadioGroup({ children, className }: RadioGroupProps) {
+  return (
+    <div className={cn('space-y-2', className)}>
+      {children}
+    </div>
+  );
+}

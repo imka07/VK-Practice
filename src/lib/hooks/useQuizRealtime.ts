@@ -82,31 +82,45 @@ export function useQuizRealtime(quizId: string) {
 
   async function loadParticipants() {
     try {
-      const { data, error } = await supabase
+      // Получаем участников
+      const { data: participantsData, error: participantsError } = await supabase
         .from('quiz_participants')
-        .select(`
-          id,
-          user_id,
-          score,
-          joined_at,
-          profiles:user_id(username)
-        `)
+        .select('id, user_id, score, joined_at')
         .eq('quiz_id', quizId)
         .order('score', { ascending: false });
 
-      if (error) throw error;
+      if (participantsError) throw participantsError;
 
-      const participantsWithUsernames = data.map((p: any) => ({
-        id: p.id,
-        user_id: p.user_id,
-        username: p.profiles?.username || 'Аноним',
-        score: p.score,
-        joined_at: p.joined_at,
-      }));
+      if (!participantsData || participantsData.length === 0) {
+        setParticipants([]);
+        return;
+      }
+
+      // Получаем профили для всех участников
+      const userIds = participantsData.map(p => p.user_id);
+      const { data: profilesData, error: profilesError } = await supabase
+        .from('profiles')
+        .select('id, username')
+        .in('id', userIds);
+
+      if (profilesError) throw profilesError;
+
+      // Объединяем данные
+      const participantsWithUsernames = participantsData.map((p) => {
+        const profile = profilesData?.find(prof => prof.id === p.user_id);
+        return {
+          id: p.id,
+          user_id: p.user_id,
+          username: profile?.username || 'Аноним',
+          score: p.score,
+          joined_at: p.joined_at,
+        };
+      });
 
       setParticipants(participantsWithUsernames);
     } catch (error) {
       console.error('Error loading participants:', error);
+      setParticipants([]);
     }
   }
 
