@@ -73,7 +73,11 @@ export function useQuizRealtime(quizId: string) {
         .eq('quiz_id', quizId)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') throw error;
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error loading quiz state:', error);
+        throw error;
+      }
+      console.log('Loaded quiz state:', data);
       setQuizState(data);
     } catch (error) {
       console.error('Error loading quiz state:', error);
@@ -117,6 +121,7 @@ export function useQuizRealtime(quizId: string) {
         };
       });
 
+      console.log('Loaded participants:', participantsWithUsernames);
       setParticipants(participantsWithUsernames);
     } catch (error) {
       console.error('Error loading participants:', error);
@@ -127,26 +132,46 @@ export function useQuizRealtime(quizId: string) {
   async function startQuiz() {
     setLoading(true);
     try {
+      console.log('Starting quiz:', quizId);
+
       // Обновляем статус квиза
-      await supabase
+      const { error: quizUpdateError } = await supabase
         .from('quizzes')
         .update({ status: 'active' })
         .eq('id', quizId);
 
-      // Создаем или обновляем состояние квиза
-      const { error } = await supabase
-        .from('quiz_state')
-        .upsert({
-          quiz_id: quizId,
-          status: 'active',
-          current_question_index: 0,
-          started_at: new Date().toISOString(),
-        });
+      if (quizUpdateError) {
+        console.error('Error updating quiz status:', quizUpdateError);
+        throw quizUpdateError;
+      }
 
-      if (error) throw error;
+      // Создаем или обновляем состояние квиза
+      const stateData = {
+        quiz_id: quizId,
+        status: 'active' as const,
+        current_question_index: 0,
+        started_at: new Date().toISOString(),
+      };
+
+      console.log('Upserting quiz state:', stateData);
+
+      const { data: stateResult, error: stateError } = await supabase
+        .from('quiz_state')
+        .upsert(stateData, { onConflict: 'quiz_id' })
+        .select();
+
+      if (stateError) {
+        console.error('Error upserting quiz state:', stateError);
+        throw stateError;
+      }
+
+      console.log('Quiz started successfully:', stateResult);
+      
+      // Перезагружаем состояние
+      await loadQuizState();
     } catch (error) {
       console.error('Error starting quiz:', error);
-      alert('Ошибка при запуске квиза');
+      alert(`Ошибка при запуске квиза: ${JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
