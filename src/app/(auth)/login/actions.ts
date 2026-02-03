@@ -46,7 +46,7 @@ export async function logoutAction() {
   
   if (error) {
     console.error('Logout error:', error);
-    return { error: 'Ошибка при выходе' };
+    // Убрали return { error: 'Ошибка при выходе' };
   }
   
   redirect('/login');
