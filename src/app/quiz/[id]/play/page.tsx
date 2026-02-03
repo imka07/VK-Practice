@@ -45,13 +45,10 @@ export default function PlayQuizPage() {
   const { quizState, participants } = useQuizRealtime(params.id as string);
 
   useEffect(() => {
-    if (!user) {
-      router.push('/login');
-      return;
-    }
+    // Убрали проверку авторизации - разрешаем анонимное участие
     loadQuiz();
     loadQuestions();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     // Сбрасываем ответ при смене вопроса
@@ -94,7 +91,7 @@ export default function PlayQuizPage() {
   }
 
   async function handleSubmitAnswer() {
-    if (!user || !currentQuestion) return;
+    if (!currentQuestion) return;
 
     const answer = currentQuestion.question_type === 'text' ? [textAnswer] : selectedAnswer;
 
@@ -104,16 +101,19 @@ export default function PlayQuizPage() {
     }
 
     try {
-      const { error } = await supabase
-        .from('participant_answers')
-        .insert({
-          quiz_id: params.id,
-          question_id: currentQuestion.id,
-          user_id: user.id,
-          answer: answer,
-        });
+      // Если пользователь авторизован, отправляем ответ
+      if (user) {
+        const { error } = await supabase
+          .from('participant_answers')
+          .insert({
+            quiz_id: params.id,
+            question_id: currentQuestion.id,
+            user_id: user.id,
+            answer: answer,
+          });
 
-      if (error) throw error;
+        if (error) throw error;
+      }
       setSubmitted(true);
     } catch (error) {
       console.error('Error submitting answer:', error);
@@ -161,15 +161,17 @@ export default function PlayQuizPage() {
               <h1 className="text-xl font-bold text-gray-900">{quiz.title}</h1>
               <p className="text-sm text-gray-600">Комната: {quiz.room_code}</p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="font-bold">{myParticipant?.score || 0}</span>
+            {user && myParticipant && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-yellow-500" />
+                  <span className="font-bold">{myParticipant.score || 0}</span>
+                </div>
+                <Badge variant="secondary">
+                  #{myRank} место
+                </Badge>
               </div>
-              <Badge variant="secondary">
-                #{myRank} место
-              </Badge>
-            </div>
+            )}
           </div>
         </div>
       </div>
@@ -319,12 +321,16 @@ export default function PlayQuizPage() {
               {myRank === 1 ? '🏆' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : '🎉'}
             </div>
             <h2 className="text-3xl font-bold mb-2">Квиз завершен!</h2>
-            <p className="text-xl text-gray-600 mb-4">
-              Вы заняли {myRank}-е место
-            </p>
-            <p className="text-2xl font-bold text-primary-600 mb-6">
-              Ваш счет: {myParticipant?.score || 0} очков
-            </p>
+            {user && myParticipant && (
+              <>
+                <p className="text-xl text-gray-600 mb-4">
+                  Вы заняли {myRank}-е место
+                </p>
+                <p className="text-2xl font-bold text-primary-600 mb-6">
+                  Ваш счет: {myParticipant.score || 0} очков
+                </p>
+              </>
+            )}
             <Link href="/">
               <Button size="lg">
                 Вернуться на главную
