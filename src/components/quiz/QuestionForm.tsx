@@ -25,7 +25,8 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
   const [questionText, setQuestionText] = useState(question?.question_text || '');
   const [imageUrl, setImageUrl] = useState(question?.question_image_url || '');
   const [options, setOptions] = useState<string[]>(question?.options || ['', '', '', '']);
-  const [correctAnswers, setCorrectAnswers] = useState<string[]>(question?.correct_answers || []);
+  // ❗ Исправлено: correct_answer вместо correct_answers
+  const [correctAnswers, setCorrectAnswers] = useState<string[]>(question?.correct_answer || []);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -131,7 +132,8 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
           question_text: questionText,
           question_image_url: imageUrl || null,
           question_type: questionType,
-          correct_answers: questionType === 'text' ? [''] : correctAnswers,
+          // ❗ Исправлено: correct_answer вместо correct_answers
+          correct_answer: questionType === 'text' ? [''] : correctAnswers,
           options: questionType === 'text' ? null : options.filter((opt) => opt.trim()),
           order_index: question?.order_index ?? nextOrderIndex,
         };
