@@ -107,7 +107,7 @@ export default function DashboardPage() {
   if (authLoading || loading || isOrganizer === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loading text="Загружка..." />
+        <Loading text="Загрузка..." />
       </div>
     );
   }
@@ -163,6 +163,8 @@ export default function DashboardPage() {
                         variant={
                           quiz.status === 'active'
                             ? 'success'
+                            : quiz.status === 'paused'
+                            ? 'warning'
                             : quiz.status === 'completed'
                             ? 'secondary'
                             : 'default'
@@ -170,6 +172,7 @@ export default function DashboardPage() {
                       >
                         {quiz.status === 'draft' && 'Черновик'}
                         {quiz.status === 'active' && 'Активный'}
+                        {quiz.status === 'paused' && 'Пауза'}
                         {quiz.status === 'completed' && 'Завершен'}
                       </Badge>
                     </div>
