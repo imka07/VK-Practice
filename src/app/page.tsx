@@ -21,18 +21,21 @@ export default function HomePage() {
   useEffect(() => {
     if (!user) return;
 
-    setLoadingProfile(true);
-    supabase
-      .from('profiles')
-      .select('role')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
+    async function loadProfile() {
+      setLoadingProfile(true);
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
         setProfile(data);
-      })
-      .finally(() => {
+      } finally {
         setLoadingProfile(false);
-      });
+      }
+    }
+
+    loadProfile();
   }, [user]);
 
   if (loading || loadingProfile) {
