@@ -25,7 +25,7 @@ interface Question {
   question_text: string;
   question_image_url: string | null;
   question_type: 'single_choice' | 'multiple_choice' | 'text';
-  correct_answers: string[];
+  correct_answer: string[]; // ❗ Исправлено: correct_answer вместо correct_answers
   options: string[] | null;
   order_index: number;
 }
