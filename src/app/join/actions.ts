@@ -47,12 +47,22 @@ export async function joinQuizAction(formData: FormData) {
     .maybeSingle();
 
   if (!existingParticipant) {
-    // Добавляем участника
+    // Получаем username из профиля
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('username, full_name')
+      .eq('id', user.id)
+      .single();
+
+    const username = profile?.username || profile?.full_name || user.email?.split('@')[0] || 'Аноним';
+
+    // Добавляем участника с username
     const { error: joinError } = await supabase
       .from('quiz_participants')
       .insert({
         quiz_id: quiz.id,
         user_id: user.id,
+        username: username,
         score: 0,
       });
 

@@ -55,7 +55,33 @@ export default function PlayQuizPage() {
     setSelectedAnswer([]);
     setTextAnswer('');
     setSubmitted(false);
+    
+    // Проверяем, не отправлен ли уже ответ на новый вопрос
+    checkExistingAnswer();
   }, [quizState?.current_question_index]);
+
+  async function checkExistingAnswer() {
+    if (!user || !questions.length || quizState?.current_question_index === undefined) return;
+
+    const currentQuestion = questions[quizState.current_question_index];
+    if (!currentQuestion) return;
+
+    try {
+      const { data } = await supabase
+        .from('participant_answers')
+        .select('id')
+        .eq('quiz_id', params.id)
+        .eq('question_id', currentQuestion.id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (data) {
+        setSubmitted(true);
+      }
+    } catch (error) {
+      console.error('Error checking existing answer:', error);
+    }
+  }
 
   async function loadQuiz() {
     try {
@@ -103,6 +129,20 @@ export default function PlayQuizPage() {
     try {
       // Если пользователь авторизован, отправляем ответ
       if (user) {
+        // Проверяем, не отправлен ли уже ответ
+        const { data: existing } = await supabase
+          .from('participant_answers')
+          .select('id')
+          .eq('quiz_id', params.id)
+          .eq('question_id', currentQuestion.id)
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (existing) {
+          setSubmitted(true);
+          return;
+        }
+
         const { error } = await supabase
           .from('participant_answers')
           .insert({
