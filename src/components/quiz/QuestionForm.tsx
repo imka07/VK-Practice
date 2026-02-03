@@ -64,7 +64,6 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
 
       setImageUrl(publicUrl);
     } catch (err: any) {
-      console.error('Upload error:', err);
       setError(err.message || 'Ошибка при загрузке изображения');
     } finally {
       setUploading(false);
@@ -102,7 +101,6 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
   async function handleSubmit() {
     setError(null);
 
-    // Валидация
     if (!questionText.trim()) {
       setError('Введите текст вопроса');
       return;
@@ -120,16 +118,12 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
         return;
       }
 
-      // ✨ НОВАЯ ПРОВЕРКА: правильные ответы должны быть среди заполненных вариантов
       const invalidCorrectAnswers = correctAnswers.filter(
         (answer) => !filledOptions.includes(answer)
       );
       
       if (invalidCorrectAnswers.length > 0) {
         setError('Правильный ответ должен быть среди заполненных вариантов');
-        console.error('Invalid correct answers:', invalidCorrectAnswers);
-        console.error('Filled options:', filledOptions);
-        console.error('Correct answers:', correctAnswers);
         return;
       }
     }
@@ -148,38 +142,25 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
           order_index: question?.order_index ?? nextOrderIndex,
         };
 
-        console.log('Saving question data:', questionData);
-
         if (question) {
-          // Редактирование
-          const { data, error: updateError } = await supabase
+          const { error: updateError } = await supabase
             .from('questions')
             .update(questionData)
             .eq('id', question.id)
             .select();
 
-          if (updateError) {
-            console.error('Update error details:', updateError);
-            throw updateError;
-          }
-          console.log('Question updated successfully:', data);
+          if (updateError) throw updateError;
         } else {
-          // Создание
-          const { data, error: insertError } = await supabase
+          const { error: insertError } = await supabase
             .from('questions')
             .insert(questionData)
             .select();
 
-          if (insertError) {
-            console.error('Insert error details:', insertError);
-            throw insertError;
-          }
-          console.log('Question created successfully:', data);
+          if (insertError) throw insertError;
         }
 
         onClose();
       } catch (err: any) {
-        console.error('Save error:', err);
         const errorMessage = err.message || err.error_description || 'Ошибка при сохранении вопроса';
         setError(`${errorMessage}${err.details ? ` (${err.details})` : ''}`);
       }
@@ -187,18 +168,18 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
   }
 
   return (
-    <Card className="p-6 mb-6">
+    <Card className="p-6 mb-6 glass animate-fade-in-up">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-semibold">
+        <h3 className="text-xl font-semibold gradient-text-blue">
           {question ? 'Редактирование вопроса' : 'Новый вопрос'}
         </h3>
-        <Button variant="ghost" size="sm" onClick={onClose}>
+        <Button variant="ghost" size="sm" onClick={onClose} className="hover:rotate-90 transition-transform duration-300">
           <X className="w-5 h-5" />
         </Button>
       </div>
 
       {error && (
-        <Alert variant="error" className="mb-4">
+        <Alert variant="error" className="mb-4 animate-slide-in-left">
           {error}
         </Alert>
       )}
@@ -241,12 +222,12 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
             Изображение (необязательно)
           </label>
           {imageUrl ? (
-            <div className="relative inline-block">
-              <img src={imageUrl} alt="Question" className="max-w-md h-auto rounded-lg" />
+            <div className="relative inline-block group">
+              <img src={imageUrl} alt="Question" className="max-w-md h-auto rounded-2xl shadow-lg" />
               <Button
                 variant="danger"
                 size="sm"
-                className="absolute top-2 right-2"
+                className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 onClick={() => setImageUrl('')}
               >
                 <Trash2 className="w-4 h-4" />
@@ -255,7 +236,7 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
           ) : (
             <div>
               <label className="cursor-pointer">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 transition-colors">
+                <div className="border-2 border-dashed border-gray-300 rounded-2xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all duration-300">
                   <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
                   <p className="text-sm text-gray-600">
                     {uploading ? 'Загрузка...' : 'Нажмите для загрузки изображения'}
@@ -281,7 +262,7 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
             </label>
             <div className="space-y-3">
               {options.map((option, index) => (
-                <div key={index} className="flex items-center gap-2">
+                <div key={index} className="flex items-center gap-2 animate-slide-in-left" style={{animationDelay: `${index * 0.1}s`}}>
                   {questionType === 'single_choice' ? (
                     <Radio
                       name="correct"
@@ -308,6 +289,7 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
                       variant="ghost"
                       size="sm"
                       onClick={() => removeOption(index)}
+                      className="hover:rotate-90 transition-transform duration-300"
                     >
                       <X className="w-4 h-4" />
                     </Button>
@@ -337,7 +319,7 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
           <Button variant="outline" onClick={onClose} disabled={isPending}>
             Отмена
           </Button>
-          <Button onClick={handleSubmit} loading={isPending}>
+          <Button onClick={handleSubmit} loading={isPending} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
             {question ? 'Сохранить' : 'Добавить'}
           </Button>
         </div>
