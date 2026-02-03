@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Loading } from '@/components/ui/Spinner';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import { PlusCircle, Edit, Trash2, Play } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Play, Sparkles } from 'lucide-react';
 
 interface Quiz {
   id: string;
@@ -36,12 +36,10 @@ export default function DashboardPage() {
     if (authLoading) return;
 
     if (!user) {
-      console.log('No user, redirecting to login');
       router.push('/login');
       return;
     }
 
-    // Проверяем role
     checkUserRole();
   }, [user, authLoading]);
 
@@ -54,7 +52,6 @@ export default function DashboardPage() {
         .single();
 
       if (error || data?.role !== 'organizer') {
-        console.log('Not organizer, redirecting to home');
         setIsOrganizer(false);
         router.push('/');
         return;
@@ -63,7 +60,6 @@ export default function DashboardPage() {
       setIsOrganizer(true);
       loadQuizzes();
     } catch (error) {
-      console.error('Error checking user role:', error);
       setIsOrganizer(false);
       router.push('/');
     }
@@ -71,21 +67,13 @@ export default function DashboardPage() {
 
   async function loadQuizzes() {
     try {
-      console.log('Loading quizzes...');
       const { data, error } = await supabase
         .from('quizzes')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error('Error loading quizzes:', error);
-        throw error;
-      }
-      
-      console.log('Loaded quizzes:', data);
+      if (error) throw error;
       setQuizzes(data || []);
-    } catch (error) {
-      console.error('Error loading quizzes:', error);
     } finally {
       setLoading(false);
     }
@@ -99,38 +87,45 @@ export default function DashboardPage() {
       if (error) throw error;
       setQuizzes(quizzes.filter((q) => q.id !== id));
     } catch (error) {
-      console.error('Error deleting quiz:', error);
       alert('Ошибка при удалении квиза');
     }
   }
 
   if (authLoading || loading || isOrganizer === null) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
         <Loading text="Загрузка..." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Панель организатора</h1>
-          <p className="text-gray-600 mt-2">Управление квизами и мероприятиями</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 relative overflow-hidden">
+      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div className="absolute top-20 left-10 w-72 h-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-40 right-10 w-72 h-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8 relative z-10">
+        <div className="mb-8 animate-fade-in-up">
+          <h1 className="text-4xl font-bold gradient-text-blue mb-2">Панель организатора</h1>
+          <p className="text-gray-600">Управление квизами и мероприятиями</p>
         </div>
 
         {quizzes.length === 0 ? (
-          <Card className="p-12 text-center">
-            <div className="text-6xl mb-4">🎮</div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+          <Card className="p-12 text-center glass border-0 shadow-xl animate-fade-in-up animation-delay-200">
+            <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-blue-500 to-purple-500 text-white mb-6 animate-float">
+              <Sparkles className="w-12 h-12" />
+            </div>
+            <h2 className="text-3xl font-bold gradient-text-blue mb-3">
               У вас пока нет квизов
             </h2>
-            <p className="text-gray-600 mb-6">
+            <p className="text-gray-600 mb-8 text-lg">
               Создайте свой первый квиз чтобы начать
             </p>
             <Link href="/quiz/create">
-              <Button size="lg">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300">
                 <PlusCircle className="w-5 h-5 mr-2" />
                 Создать первый квиз
               </Button>
@@ -138,21 +133,25 @@ export default function DashboardPage() {
           </Card>
         ) : (
           <>
-            <div className="mb-8 flex justify-end">
+            <div className="mb-8 flex justify-end animate-fade-in-up animation-delay-200">
               <Link href="/quiz/create">
-                <Button size="lg">
+                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-xl hover:shadow-2xl transition-all duration-300">
                   <PlusCircle className="w-5 h-5 mr-2" />
                   Создать квиз
                 </Button>
               </Link>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {quizzes.map((quiz) => (
-                <Card key={quiz.id} className="p-6 hover:shadow-lg transition-shadow">
+              {quizzes.map((quiz, index) => (
+                <Card 
+                  key={quiz.id} 
+                  className="group p-6 glass border-0 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 animate-fade-in-up" 
+                  style={{animationDelay: `${(index * 0.1) + 0.4}s`}}
+                >
                   <Card.Header className="p-0 mb-4 border-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <Card.Title className="text-xl mb-2">{quiz.title}</Card.Title>
+                        <Card.Title className="text-xl mb-2 group-hover:text-blue-600 transition-colors">{quiz.title}</Card.Title>
                         {quiz.description && (
                           <Card.Description className="text-sm">
                             {quiz.description}
@@ -169,6 +168,7 @@ export default function DashboardPage() {
                             ? 'secondary'
                             : 'default'
                         }
+                        className="shadow-md"
                       >
                         {quiz.status === 'draft' && 'Черновик'}
                         {quiz.status === 'active' && 'Активный'}
@@ -178,32 +178,32 @@ export default function DashboardPage() {
                     </div>
                   </Card.Header>
 
-                  <Card.Content className="p-0 space-y-2 text-sm text-gray-600">
-                    <div className="flex justify-between">
-                      <span>Категория:</span>
-                      <span className="font-medium">{quiz.category}</span>
+                  <Card.Content className="p-0 space-y-3 text-sm">
+                    <div className="flex justify-between px-3 py-2 rounded-lg bg-blue-50/50">
+                      <span className="text-gray-600">Категория:</span>
+                      <span className="font-medium text-gray-900">{quiz.category}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Код комнаты:</span>
-                      <span className="font-mono font-bold text-primary-600">
+                    <div className="flex justify-between px-3 py-2 rounded-lg bg-purple-50/50">
+                      <span className="text-gray-600">Код комнаты:</span>
+                      <span className="font-mono font-bold gradient-text-purple">
                         {quiz.room_code}
                       </span>
                     </div>
-                    <div className="flex justify-between">
-                      <span>Создан:</span>
-                      <span>{new Date(quiz.created_at).toLocaleDateString('ru-RU')}</span>
+                    <div className="flex justify-between px-3 py-2 rounded-lg bg-pink-50/50">
+                      <span className="text-gray-600">Создан:</span>
+                      <span className="font-medium text-gray-900">{new Date(quiz.created_at).toLocaleDateString('ru-RU')}</span>
                     </div>
                   </Card.Content>
 
-                  <Card.Footer className="p-0 mt-4 pt-4 border-t flex gap-2">
+                  <Card.Footer className="p-0 mt-6 pt-4 border-t border-gray-200 flex gap-2">
                     <Link href={`/quiz/${quiz.id}/host`} className="flex-1">
-                      <Button variant="primary" size="sm" className="w-full">
+                      <Button variant="primary" size="sm" className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-md">
                         <Play className="w-4 h-4 mr-2" />
                         Запустить
                       </Button>
                     </Link>
                     <Link href={`/quiz/${quiz.id}/edit`}>
-                      <Button variant="outline" size="sm">
+                      <Button variant="outline" size="sm" className="border-2 hover:border-blue-500 hover:bg-blue-50">
                         <Edit className="w-4 h-4" />
                       </Button>
                     </Link>
@@ -211,6 +211,7 @@ export default function DashboardPage() {
                       variant="danger"
                       size="sm"
                       onClick={() => handleDelete(quiz.id)}
+                      className="shadow-md hover:shadow-lg"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
