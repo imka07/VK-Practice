@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { gradeCurrentQuestion } from '@/lib/actions/gradeAnswers';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 interface QuizState {
@@ -84,38 +85,14 @@ export function useQuizRealtime(quizId: string) {
     try {
       const { data: participantsData, error: participantsError } = await supabase
         .from('quiz_participants')
-        .select('id, user_id, score, joined_at')
+        .select('id, user_id, username, score, joined_at')
         .eq('quiz_id', quizId)
         .order('score', { ascending: false });
 
       if (participantsError) throw participantsError;
 
-      if (!participantsData || participantsData.length === 0) {
-        setParticipants([]);
-        return;
-      }
-
-      const userIds = participantsData.map(p => p.user_id);
-      const { data: profilesData, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, username')
-        .in('id', userIds);
-
-      if (profilesError) throw profilesError;
-
-      const participantsWithUsernames = participantsData.map((p) => {
-        const profile = profilesData?.find(prof => prof.id === p.user_id);
-        return {
-          id: p.id,
-          user_id: p.user_id,
-          username: profile?.username || 'Аноним',
-          score: p.score,
-          joined_at: p.joined_at,
-        };
-      });
-
-      console.log('Loaded participants:', participantsWithUsernames);
-      setParticipants(participantsWithUsernames);
+      console.log('Loaded participants:', participantsData);
+      setParticipants(participantsData || []);
     } catch (error) {
       console.error('Error loading participants:', error);
       setParticipants([]);
@@ -135,12 +112,6 @@ export function useQuizRealtime(quizId: string) {
 
       if (quizUpdateError) {
         console.error('Error updating quiz status:', quizUpdateError);
-        console.error('Error details:', {
-          code: quizUpdateError.code,
-          message: quizUpdateError.message,
-          details: quizUpdateError.details,
-          hint: quizUpdateError.hint,
-        });
         throw quizUpdateError;
       }
 
@@ -152,34 +123,20 @@ export function useQuizRealtime(quizId: string) {
         started_at: new Date().toISOString(),
       };
 
-      console.log('Upserting quiz state:', stateData);
-
-      const { data: stateResult, error: stateError } = await supabase
+      const { error: stateError } = await supabase
         .from('quiz_state')
         .upsert(stateData, { onConflict: 'quiz_id' })
         .select();
 
       if (stateError) {
-        console.error('Error upserting quiz state - Full error object:');
-        console.error('code:', stateError.code);
-        console.error('message:', stateError.message);
-        console.error('details:', stateError.details);
-        console.error('hint:', stateError.hint);
-        console.error('Full error:', stateError);
-        console.error('Stringified:', JSON.stringify(stateError, null, 2));
+        console.error('Error upserting quiz state:', stateError);
         throw stateError;
       }
 
-      console.log('Quiz started successfully:', stateResult);
-      
+      console.log('Quiz started successfully');
       await loadQuizState();
     } catch (error: any) {
-      console.error('Error starting quiz:');
-      console.error('Type:', typeof error);
-      console.error('Error object:', error);
-      console.error('Error keys:', Object.keys(error));
-      console.error('Error values:', Object.values(error));
-      
+      console.error('Error starting quiz:', error);
       const errorMsg = error?.message || error?.code || 'Неизвестная ошибка';
       alert(`Ошибка при запуске квиза: ${errorMsg}`);
     } finally {
@@ -213,6 +170,21 @@ export function useQuizRealtime(quizId: string) {
     try {
       const currentIndex = quizState?.current_question_index || 0;
       
+      // Сначала оцениваем текущий вопрос
+      const { data: questions } = await supabase
+        .from('questions')
+        .select('id')
+        .eq('quiz_id', quizId)
+        .order('order_index');
+
+      if (questions && questions[currentIndex]) {
+        console.log('Grading question:', questions[currentIndex].id);
+        await gradeCurrentQuestion(quizId, questions[currentIndex].id);
+        // Обновляем лидерборд
+        await loadParticipants();
+      }
+      
+      // Затем переходим к следующему
       const { error } = await supabase
         .from('quiz_state')
         .update({ current_question_index: currentIndex + 1 })
@@ -229,6 +201,20 @@ export function useQuizRealtime(quizId: string) {
   async function endQuiz() {
     setLoading(true);
     try {
+      // Оцениваем последний вопрос перед завершением
+      const currentIndex = quizState?.current_question_index || 0;
+      const { data: questions } = await supabase
+        .from('questions')
+        .select('id')
+        .eq('quiz_id', quizId)
+        .order('order_index');
+
+      if (questions && questions[currentIndex]) {
+        console.log('Grading final question:', questions[currentIndex].id);
+        await gradeCurrentQuestion(quizId, questions[currentIndex].id);
+        await loadParticipants();
+      }
+
       const { error } = await supabase
         .from('quiz_state')
         .update({ 
