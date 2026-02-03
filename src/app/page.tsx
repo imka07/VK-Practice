@@ -22,6 +22,8 @@ export default function HomePage() {
     if (!user) return;
 
     async function loadProfile() {
+      if (!user) return; // Guard against null
+      
       setLoadingProfile(true);
       try {
         const { data } = await supabase
