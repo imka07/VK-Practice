@@ -3,10 +3,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
+    const { id } = await params;
     const { questionId, userId } = await request.json();
 
     // 1. Получаем вопрос с правильным ответом
@@ -28,7 +29,7 @@ export async function POST(
     const { data: answer, error: answerError } = await supabase
       .from('participant_answers')
       .select('answer, answered_at')
-      .eq('quiz_id', params.id)
+      .eq('quiz_id', id)
       .eq('question_id', questionId)
       .eq('user_id', userId)
       .single();
@@ -57,7 +58,7 @@ export async function POST(
     await supabase
       .from('participant_answers')
       .update({ is_correct: isCorrect })
-      .eq('quiz_id', params.id)
+      .eq('quiz_id', id)
       .eq('question_id', questionId)
       .eq('user_id', userId);
 
@@ -67,20 +68,19 @@ export async function POST(
       const { data: quiz } = await supabase
         .from('quizzes')
         .select('points_per_question')
-        .eq('id', params.id)
+        .eq('id', id)
         .single();
 
       pointsAwarded = quiz?.points_per_question || 10;
 
       // Вызываем функцию увеличения счета
       const { error: scoreError } = await supabase.rpc('increment_participant_score', {
-        p_quiz_id: params.id,
+        p_quiz_id: id,
         p_user_id: userId,
         p_points: pointsAwarded,
       });
 
       if (scoreError) {
-        console.error('Error incrementing score:', scoreError);
         throw scoreError;
       }
     }
@@ -92,7 +92,6 @@ export async function POST(
     });
 
   } catch (error) {
-    console.error('Error checking answer:', error);
     return NextResponse.json({ 
       error: 'Failed to check answer',
       details: error instanceof Error ? error.message : 'Unknown error'
