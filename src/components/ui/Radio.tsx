@@ -42,11 +42,17 @@ Radio.displayName = 'Radio';
 interface RadioGroupProps {
   children: React.ReactNode;
   className?: string;
+  label?: string;
 }
 
-export function RadioGroup({ children, className }: RadioGroupProps) {
+export function RadioGroup({ children, className, label }: RadioGroupProps) {
   return (
     <div className={cn('space-y-2', className)}>
+      {label && (
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+      )}
       {children}
     </div>
   );
