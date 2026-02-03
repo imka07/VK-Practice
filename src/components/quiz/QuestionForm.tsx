@@ -25,7 +25,6 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
   const [questionText, setQuestionText] = useState(question?.question_text || '');
   const [imageUrl, setImageUrl] = useState(question?.question_image_url || '');
   const [options, setOptions] = useState<string[]>(question?.options || ['', '', '', '']);
-  // ❗ Исправлено: correct_answer вместо correct_answers
   const [correctAnswers, setCorrectAnswers] = useState<string[]>(question?.correct_answer || []);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +35,11 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Проверка типа файла
     if (!file.type.startsWith('image/')) {
       setError('Можно загружать только изображения');
       return;
     }
 
-    // Проверка размера (5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('Размер файла не должен превышать 5MB');
       return;
@@ -87,7 +84,6 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
   function removeOption(index: number) {
     const newOptions = options.filter((_, i) => i !== index);
     setOptions(newOptions);
-    // Удаляем из правильных ответов если есть
     setCorrectAnswers(correctAnswers.filter((ans) => ans !== options[index]));
   }
 
@@ -123,42 +119,69 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
         setError('Укажите правильный ответ');
         return;
       }
+
+      // ✨ НОВАЯ ПРОВЕРКА: правильные ответы должны быть среди заполненных вариантов
+      const invalidCorrectAnswers = correctAnswers.filter(
+        (answer) => !filledOptions.includes(answer)
+      );
+      
+      if (invalidCorrectAnswers.length > 0) {
+        setError('Правильный ответ должен быть среди заполненных вариантов');
+        console.error('Invalid correct answers:', invalidCorrectAnswers);
+        console.error('Filled options:', filledOptions);
+        console.error('Correct answers:', correctAnswers);
+        return;
+      }
     }
 
     startTransition(async () => {
       try {
+        const filledOptions = questionType === 'text' ? null : options.filter((opt) => opt.trim());
+        
         const questionData = {
           quiz_id: quizId,
           question_text: questionText,
           question_image_url: imageUrl || null,
           question_type: questionType,
-          // ❗ Исправлено: correct_answer вместо correct_answers
-          correct_answer: questionType === 'text' ? [''] : correctAnswers,
-          options: questionType === 'text' ? null : options.filter((opt) => opt.trim()),
+          correct_answer: questionType === 'text' ? [] : correctAnswers,
+          options: filledOptions,
           order_index: question?.order_index ?? nextOrderIndex,
         };
 
+        console.log('Saving question data:', questionData);
+
         if (question) {
           // Редактирование
-          const { error: updateError } = await supabase
+          const { data, error: updateError } = await supabase
             .from('questions')
             .update(questionData)
-            .eq('id', question.id);
+            .eq('id', question.id)
+            .select();
 
-          if (updateError) throw updateError;
+          if (updateError) {
+            console.error('Update error details:', updateError);
+            throw updateError;
+          }
+          console.log('Question updated successfully:', data);
         } else {
           // Создание
-          const { error: insertError } = await supabase
+          const { data, error: insertError } = await supabase
             .from('questions')
-            .insert(questionData);
+            .insert(questionData)
+            .select();
 
-          if (insertError) throw insertError;
+          if (insertError) {
+            console.error('Insert error details:', insertError);
+            throw insertError;
+          }
+          console.log('Question created successfully:', data);
         }
 
         onClose();
       } catch (err: any) {
         console.error('Save error:', err);
-        setError(err.message || 'Ошибка при сохранении вопроса');
+        const errorMessage = err.message || err.error_description || 'Ошибка при сохранении вопроса';
+        setError(`${errorMessage}${err.details ? ` (${err.details})` : ''}`);
       }
     });
   }
@@ -304,8 +327,8 @@ export function QuestionForm({ quizId, question, onClose, nextOrderIndex }: Ques
             )}
             <p className="text-sm text-gray-500 mt-2">
               {questionType === 'single_choice'
-                ? 'Отметьте правильный ответ'
-                : 'Отметьте все правильные ответы'}
+                ? 'Сначала заполните вариант, затем отметьте его как правильный'
+                : 'Сначала заполните варианты, затем отметьте все правильные'}
             </p>
           </div>
         )}
