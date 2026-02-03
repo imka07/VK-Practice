@@ -45,18 +45,15 @@ export default function PlayQuizPage() {
   const { quizState, participants } = useQuizRealtime(params.id as string);
 
   useEffect(() => {
-    // Убрали проверку авторизации - разрешаем анонимное участие
     loadQuiz();
     loadQuestions();
   }, []);
 
   useEffect(() => {
-    // Сбрасываем ответ при смене вопроса
     setSelectedAnswer([]);
     setTextAnswer('');
     setSubmitted(false);
     
-    // Проверяем, не отправлен ли уже ответ на новый вопрос
     checkExistingAnswer();
   }, [quizState?.current_question_index]);
 
@@ -127,9 +124,7 @@ export default function PlayQuizPage() {
     }
 
     try {
-      // Если пользователь авторизован, отправляем ответ
       if (user) {
-        // Проверяем, не отправлен ли уже ответ
         const { data: existing } = await supabase
           .from('participant_answers')
           .select('id')
@@ -143,6 +138,7 @@ export default function PlayQuizPage() {
           return;
         }
 
+        // Сохраняем ответ с временем
         const { error } = await supabase
           .from('participant_answers')
           .insert({
@@ -150,9 +146,11 @@ export default function PlayQuizPage() {
             question_id: currentQuestion.id,
             user_id: user.id,
             answer: answer,
+            answered_at: new Date().toISOString(), // Важно для подсчета времени!
           });
 
         if (error) throw error;
+        console.log('Answer submitted with timestamp:', new Date().toISOString());
       }
       setSubmitted(true);
     } catch (error) {
@@ -278,13 +276,13 @@ export default function PlayQuizPage() {
                               name="answer"
                               value={option}
                               checked={selectedAnswer.includes(option)}
-                              onChange={() => {}} // handled by div onClick
+                              onChange={() => {}}
                               disabled={submitted}
                             />
                           ) : (
                             <Checkbox
                               checked={selectedAnswer.includes(option)}
-                              onChange={() => {}} // handled by div onClick
+                              onChange={() => {}}
                               disabled={submitted}
                             />
                           )}
