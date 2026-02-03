@@ -52,7 +52,7 @@ export async function joinQuizAction(formData: FormData) {
       .from('profiles')
       .select('username, full_name')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     const username = profile?.username || profile?.full_name || user.email?.split('@')[0] || 'Аноним';
 
