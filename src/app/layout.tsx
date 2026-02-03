@@ -3,7 +3,7 @@ import './globals.css';
 import { Header } from '@/components/layout/Header';
 
 export const metadata: Metadata = {
-  title: 'Quiz Platform - Интерактивные квизы',
+  title: 'Квизы от VK - Интерактивные квизы',
   description: 'Платформа для проведения интерактивных квизов в реальном времени',
 };
 
