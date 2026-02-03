@@ -146,11 +146,39 @@ export default function PlayQuizPage() {
             question_id: currentQuestion.id,
             user_id: user.id,
             answer: answer,
-            answered_at: new Date().toISOString(), // Важно для подсчета времени!
+            answered_at: new Date().toISOString(),
           });
 
         if (error) throw error;
         console.log('Answer submitted with timestamp:', new Date().toISOString());
+
+        // ✨ НОВОЕ: Вызываем проверку ответа и начисление очков
+        try {
+          const response = await fetch(`/api/quiz/${params.id}/check-answer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              questionId: currentQuestion.id,
+              userId: user.id,
+            }),
+          });
+
+          const result = await response.json();
+          
+          if (result.success) {
+            console.log('Answer checked:', result);
+            if (result.isCorrect) {
+              console.log(`✅ Correct! +${result.pointsAwarded} points`);
+            } else {
+              console.log('❌ Incorrect answer');
+            }
+          } else {
+            console.error('Failed to check answer:', result);
+          }
+        } catch (checkError) {
+          console.error('Error checking answer:', checkError);
+          // Не показываем ошибку пользователю, ответ уже сохранен
+        }
       }
       setSubmitted(true);
     } catch (error) {
