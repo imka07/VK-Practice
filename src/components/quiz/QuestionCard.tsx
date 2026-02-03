@@ -53,21 +53,26 @@ export function QuestionCard({ question, index, onEdit, onDelete }: QuestionCard
 
       {question.question_type !== 'text' && question.options && (
         <div className="space-y-2">
-          {question.options.map((option: string, idx: number) => (
-            <div
-              key={idx}
-              className={`flex items-center gap-2 p-3 rounded-lg ${
-                question.correct_answers.includes(option)
-                  ? 'bg-success-50 border border-success-200'
-                  : 'bg-gray-50'
-              }`}
-            >
-              {question.correct_answers.includes(option) && (
-                <CheckCircle className="w-4 h-4 text-success-600" />
-              )}
-              <span className="text-sm">{option}</span>
-            </div>
-          ))}
+          {question.options.map((option: string, idx: number) => {
+            // ❗ Исправлено: correct_answer вместо correct_answers
+            const isCorrect = question.correct_answer?.includes(option) || false;
+            
+            return (
+              <div
+                key={idx}
+                className={`flex items-center gap-2 p-3 rounded-lg ${
+                  isCorrect
+                    ? 'bg-success-50 border border-success-200'
+                    : 'bg-gray-50'
+                }`}
+              >
+                {isCorrect && (
+                  <CheckCircle className="w-4 h-4 text-success-600" />
+                )}
+                <span className="text-sm">{option}</span>
+              </div>
+            );
+          })}
         </div>
       )}
     </Card>
